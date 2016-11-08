@@ -11,7 +11,7 @@
 ##-----------------------------------------------------------------------
 
 #use warnings;
-use strict;
+#use strict;
 use DBI;
 
 # File settings
@@ -21,13 +21,13 @@ my $outFile = "./Result.csv";
 # DB settings
 print "Please type your DB user name:\n";
 my $stdinUser=<STDIN>;
+
 chomp($stdinUser);
 print "Please type your DB password:\n";
 my $stdinPw=<STDIN>;
 chomp($stdinPw);
-
 my $dataSource = 'dbi:ODBC:qad';
-my $dbh = DBI->connect($dataSource, $stdinUser, $stdinPw) or die "Can't connect to $dataSource: $DBI::errstr";
+my $dbh = DBI->connect($dataSource, $stdinUser, $stdinPw) or die $!;
 
 
 open(LIST, "<$listFile");
@@ -37,19 +37,17 @@ while(<LIST>) {
     my $curEstID = $_;
 
     my $sql = 'select top 2 * from GSecMstrX';
-    my $sth = $dbh->prepare($sql) or die "Can't prepare statement: $DBI::errstr";
+    my $sth = $dbh->prepare($sql);
     $sth->execute();
 
     # Print the column name.
-    print "$sth->{NAME}->[0]\n";
+    print "$sth->{NAME}->[0..10]\n";
 
     # Fetch and display the result set value.
     while( my @row = $sth->fetchrow_array ) {
         print join(',', @row), "\n";
     }
-    $sth->close();
     $dbh->disconnect;
-
 }
 
 close(LIST);
