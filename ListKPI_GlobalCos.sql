@@ -21,8 +21,8 @@
  Domestic securities: SecMstrX.SecCode -> PermSecMapX.SecCode where EntType=55 and RegCode= 1 -> PermSecMapX.EntPermID -> TREInfo.QuotePermID
  Global securities: GSecMstrX.SecCode -> PermSecMapX.SecCode where EntType=55 and RegCode= 0 -> PermSecMapX.EntPermID -> TREInfo.QuotePermID
 */
----------------------------------- Take all JPM stocks from GSecMstrX with EntPermID
-drop table #alljp_ibes2
+---------------------------------- Take all Stocks from SecMstrX and GSecMstrX with EntPermID
+drop table #allg_ibes2
 select
 	gmst.SecCode
 ,	gmst.Isin
@@ -32,60 +32,75 @@ select
 ,	pmap.EndDate
 ,	iifo.QuotePermID
 ,	iifo.EstPermID
-into #alljp_ibes2
+into #allg_ibes2
 from
 	GSecMstrX gmst
 	join GSecMapX gmap on gmst.SecCode = gmap.SecCode and gmap.VenType=2
 	join PermSecMapX pmap on gmst.SecCode=pmap.SecCode and pmap.RegCode=0 and pmap.EntType=55 and pmap.EndDate > getdate()
 	join TREInfo iifo on pmap.EntPermID = iifo.QuotePermID
-where
-	gmst.Country='JPN'
 order by Name asc
 
-select * from #alljp_ibes2
+insert into #allg_ibes2
+select
+	mstr.SecCode
+,	mstr.Isin
+,	mstr.Name
+,	mapx.VenCode
+,	pmap.EntPermID
+,	pmap.EndDate
+,	iifo.QuotePermID
+,	iifo.EstPermID
+from
+	SecMstrX mstr
+	join SecMapX mapx on mstr.SecCode = mapx.SecCode and mapx.VenType=2
+	join PermSecMapX pmap on mstr.SecCode=pmap.SecCode and pmap.RegCode=1 and pmap.EntType=55 and pmap.EndDate > getdate()
+	join TREInfo iifo on pmap.EntPermID = iifo.QuotePermID
+order by Name asc
 
---------------------------------- Retrieve all DS2 current JP stocks
-drop table #ds2jp
+select * from #allg_ibes2
+
+
+--------------------------------- Retrieve all DS2 available stocks
+drop table #ds2all
 select
 	dmap.*
 ,	difo.*
-into #ds2jp
+into #ds2all
 from
 	vw_Ds2Mapping dmap
 	join vw_Ds2SecInfo difo on dmap.VenCode=difo.InfoCode
 where
 	difo.IsPrimQt = 1
 	and difo.StatusCode='A'
-	and difo.CountryTradingInName='JAPAN'
 
-drop table #ibsdsjp
+drop table #ibsdsall
 select 
 	ibs2.SecCode
 ,	ibs2.Name
 ,	ibs2.EntPermID
 ,	ibs2.EstPermID
-,	ds2j.InfoCode
-,	ds2j.DsQtName
-,	ds2j.PrimaryExchange
-,	convert(int, right(dsqt.DsLocalCode,4)) as 'Ticker'
-into #ibsdsjp
+,	ds2.InfoCode
+,	ds2.DsQtName
+,	ds2.PrimaryExchange
+,	dsqt.DsLocalCode
+into #ibsdsall
 from
-	#alljp_ibes2 ibs2
-	join #ds2jp ds2j on ibs2.SecCode=ds2j.SecCode
-	join Ds2CtryQtInfo dsqt on ds2j.InfoCode=dsqt.InfoCode
+	#allg_ibes2 ibs2
+	join #ds2all ds2 on ibs2.SecCode=ds2.SecCode
+	join Ds2CtryQtInfo dsqt on ds2.InfoCode=dsqt.InfoCode
 
 
 --------------------------------------------------------
 -- 2. Pick only available items for FY 2016/10 - 2017/9
 --------------------------------------------------------
-drop table #measlist_jp
+drop table #measlist
 select
 	distinct(Measure)
-into #measlist_jp
+into #measlist
 from
 	TRESumPer esum
 where
-	EstPermID in (select distinct EstPermID from #ibsdsjp)
+	EstPermID in (select distinct EstPermID from #ibsdsall)
 	and IsParent=0 -- Consolidated
 	and PerType=4 -- Year
 	and PerEndDate > GetDate()
@@ -99,18 +114,18 @@ where
 select
 	mname.*
 from
-	#measlist_jp mlst
+	#measlist mlst
 	join TRECode mname on mlst.Measure=mname.Code
 where
 	mname.CodeType=5
 
-drop table #alljp_ibes2
-drop table #ds2jp
+drop table #allg_ibes2
+drop table #ds2all
 
 -------------------------------------
 -- 4. Sample KPI data for each stock 
 -------------------------------------
-select * from #ibsdsjp
+select * from #ibsdsall
 
 select
 	tsum.EstPermID
