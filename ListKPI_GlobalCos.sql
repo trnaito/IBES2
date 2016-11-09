@@ -1,14 +1,14 @@
 
 /*====================================================================================================================
 
- Version 1.0 2016/11/08 Ryoichi Naito ryoichi.naito@thomsonreuters.com
+ Version 1.0 2016/11/09 Ryoichi Naito ryoichi.naito@thomsonreuters.com
 
- To search all available KPIs of Japanese stocks, the final result from this query will be used to be the stock list
- which is mapped to all available IBES2 items.
+ To search all available KPIs of all stocks, the final result from this query will be used as a stock list
+ to pick available IBES2 items including KPIs.
 
  Temp tables:
- #measlist_jp .. All IBES2 items for Japanese stocks
- #ibsdsjp .. All Japanese stocks with EstPermID which is the key ID for IBES2 data.
+ #measlist .. All available IBES2 items those stocks
+ #ibsdsall .. All DS2 active stocks with EstPermID which is mapped to IBES2 items.
 
  Note: If you encountered an error 'Cannot drop the table...', please ignore and continue the rest of SQLs.
   
