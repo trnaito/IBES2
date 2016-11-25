@@ -137,7 +137,7 @@ from
 	TRESumPer tsum
 	join TRECode mcod on tsum.Measure = mcod.Code and mcod.CodeType=5
 where
-	tsum.EstPermID=30064809048
+	tsum.EstPermID=30064783263
 	and tsum.ExpireDate is null
 	and tsum.PerEndDate > GetDate()
 group by
@@ -160,7 +160,7 @@ from
         TRESumPer tsum
         join TRECode mcod on tsum.Measure = mcod.Code and mcod.CodeType=5
 where
-        tsum.EstPermID= 30064809048
+        tsum.EstPermID= 30064795966
         and tsum.ExpireDate is null
         and tsum.PerEndDate > GetDate()
 group by
