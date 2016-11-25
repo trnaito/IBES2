@@ -1,27 +1,27 @@
 
-/*====================================================================================================================
+/*============================================================================================================
 
- Version 1.0 2016/11/08 Ryoichi Naito ryoichi.naito@thomsonreuters.com
+ Version 1.0 2016/11/25 Ryoichi Naito: ryoichi.naito@thomsonreuters.com
 
- To search all available KPIs of Japanese stocks, the final result from this query will be used to be the stock list
- which is mapped to all available IBES2 items.
+ Retrieve all available consensus data for a universe.
 
  Temp tables:
- #measlist_jp .. All IBES2 items for Japanese stocks
- #ibsdsjp .. All Japanese stocks with EstPermID which is the key ID for IBES2 data.
 
  Note: If you encountered an error 'Cannot drop the table...', please ignore and continue the rest of SQLs.
   
- ====================================================================================================================*/
+ ============================================================================================================*/
 
-------------------------------------------------------------------------------
--- 1. List all PermID for current listed stocks where IBES2 data is available
-------------------------------------------------------------------------------
+----------------------------------------------------
+-- 1. All PermID for current listed stocks for IBES2
+----------------------------------------------------
 /*
+ Mapping rule with QA Direct master tables and IBES2 tables
  Domestic securities: SecMstrX.SecCode -> PermSecMapX.SecCode where EntType=55 and RegCode= 1 -> PermSecMapX.EntPermID -> TREInfo.QuotePermID
  Global securities: GSecMstrX.SecCode -> PermSecMapX.SecCode where EntType=55 and RegCode= 0 -> PermSecMapX.EntPermID -> TREInfo.QuotePermID
-*/
----------------------------------- Take all JPM stocks from GSecMstrX with EntPermID
+
+ <Take all Japanese stocks from GSecMstrX with EntPermID>
+ ---------------------------------------------------------*/
+
 drop table #alljp_ibes2
 select
 	gmst.SecCode
@@ -35,14 +35,115 @@ select
 into #alljp_ibes2
 from
 	GSecMstrX gmst
-	join GSecMapX gmap on gmst.SecCode = gmap.SecCode and gmap.VenType=2
-	join PermSecMapX pmap on gmst.SecCode=pmap.SecCode and pmap.RegCode=0 and pmap.EntType=55 and pmap.EndDate > getdate()
+	join GSecMapX gmap on gmst.SecCode = gmap.SecCode 
+		and gmap.VenType=2
+	join PermSecMapX pmap on gmst.SecCode=pmap.SecCode 
+		and pmap.RegCode=0           -- 0=Global, 1=US only
+		and pmap.EntType=55          -- QuotePermID (mapping with IBES2)
+		and pmap.EndDate > getdate() -- Exclude delisted stocks
 	join TREInfo iifo on pmap.EntPermID = iifo.QuotePermID
 where
 	gmst.Country='JPN'
 order by Name asc
 
-select * from #alljp_ibes2
+
+select * from #alljp_ibes2 order by Name -- (sample) 7203.T Toyota Motors.. EstPermID=30064817552, EntPermID=55837434056, QuotePermID=55837434056
+
+
+-----------------------
+-- 2. Available items
+-----------------------
+drop table #measlist_jp
+select
+	distinct(Measure)
+into #measlist_jp
+from
+	TRESumPer esum
+where
+	EstPermID in (select distinct EstPermID from #alljp_ibes2)
+	and IsParent=0 -- Consolidated
+	and PerType=4 -- Year
+	and PerEndDate > GetDate()
+	and format(PerEndDate, 'yyyyMM') > format(dateadd(year, -3, getdate()), 'yyyyMM') -- Strict recent 3 years to speed-up the query
+	and ExpireDate is null
+
+/*---------------------------------
+ * The list of available data items
+ *---------------------------------*/
+select
+	ml.*
+,	de.Description
+from 
+	#measlist_jp ml
+	join TRECode de on ml.Measure = de.Code and de.CodeType=5 -- CodeType=4 (measure code), CodeType=5 (measure name)
+order by
+	ml.Measure
+
+select * from TRECode
+
+
+--------------------------------------------------------------------------------------------------
+-- 3. Show all consensus data items for a stock (7203.T Toyota Motors) on a specific date of FY1.
+--    The data is annual and consolidated.
+--    @myMonth is 'yyyyMM'
+--------------------------------------------------------------------------------------------------
+
+declare @myMonth char(6);
+select @myMonth = '201610'; -- <<== Please specify the month in 'yyyyMM' format
+
+-----------------------------
+
+declare @fMyMonth char(8);
+select @fMyMonth = @myMonth + '01';
+
+select top 10000
+	cd.Description
+,	su.*
+from
+	TRESumPer su
+	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
+	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5
+where
+	su.EstPermID=30064817552
+	and su.EffectiveDate between convert(datetime, @fMyMonth, 112) and dateadd(month, 1, dateadd(day, -1, convert(datetime, @fMyMonth, 112))) 
+	and su.IsParent = 0 -- consolidated
+	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year
+	and ix.PerIndex = 1
+
+
+
+-------------------------------------------------------------------------------
+-- 4. Show all consensus data items for a universe on a specific month of FY1.
+--    The data is annual and consolidated.
+--    @myMonth is 'yyyyMM'
+-------------------------------------------------------------------------------
+
+declare @myMonth char(6);
+select @myMonth = '201610'; -- <<== Please specify the month in 'yyyyMM' format
+
+-----------------------------
+
+declare @fMyMonth char(8);
+select @fMyMonth = @myMonth + '01';
+
+select
+	cd.Description
+,	su.*
+from
+	TRESumPer su
+	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
+	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5
+where
+	su.EstPermID in (select EstPermID from #alljp_ibes2)
+	and su.EffectiveDate between convert(datetime, @fMyMonth, 112) and dateadd(month, 1, dateadd(day, -1, convert(datetime, @fMyMonth, 112))) 
+	and su.IsParent = 0 -- consolidated
+	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year
+	and ix.PerIndex = 1
+order by 
+	EstPermID asc
+,	Measure asc
+,	EffectiveDate desc
+
 
 --------------------------------- Retrieve all DS2 current JP stocks
 drop table #ds2jp
@@ -73,80 +174,3 @@ from
 	#alljp_ibes2 ibs2
 	join #ds2jp ds2j on ibs2.SecCode=ds2j.SecCode
 	join Ds2CtryQtInfo dsqt on ds2j.InfoCode=dsqt.InfoCode
-
-
---------------------------------------------------------
--- 2. Pick only available items for FY 2016/10 - 2017/9
---------------------------------------------------------
-drop table #measlist_jp
-select
-	distinct(Measure)
-into #measlist_jp
-from
-	TRESumPer esum
-where
-	EstPermID in (select distinct EstPermID from #ibsdsjp)
-	and IsParent=0 -- Consolidated
-	and PerType=4 -- Year
-	and PerEndDate > GetDate()
-	and format(PerEndDate, 'yyyyMM') between '201610' and '201709'
-	and ExpireDate is null
-
-
-------------------------------------------------------------------------
--- 3. Summarize and format the table and delete unnecessary temp tables
-------------------------------------------------------------------------
-select
-	mname.*
-from
-	#measlist_jp mlst
-	join TRECode mname on mlst.Measure=mname.Code
-where
-	mname.CodeType=5
-
-drop table #alljp_ibes2
-drop table #ds2jp
-
--------------------------------------
--- 4. Sample KPI data for each stock 
--------------------------------------
-select * from #ibsdsjp
-
-select
-	tsum.EstPermID
-,	tsum.Measure
-,	mcod.Description
-,	Min(tsum.PerEndDate) as 'PerEndDate'
-,	tsum.DefMeanEst
-from
-	TRESumPer tsum
-	join TRECode mcod on tsum.Measure = mcod.Code and mcod.CodeType=5
-where
-	tsum.EstPermID=30064809048
-	and tsum.ExpireDate is null
-	and tsum.PerEndDate > GetDate()
-group by
-	tsum.EstPermID, tsum.Measure, mcod.Description, tsum.DefMeanEst
-
-	-- and IsParent=0 -- Consolidated
-	-- and PerType=4 -- Year
-	-- and (DateDiff(year, PerEndDate, EffectiveDate) = 0 -- temporary specify Konki
-	-- or (EffectiveDate>='2016-07-25' and DateDiff(year, PerEndDate, EffectiveDate) <0))
-
-
-
-select
-        tsum.EstPermID
-,       tsum.Measure
-,       mcod.Description
-,       Min(tsum.PerEndDate) as 'PerEndDate'
-,       tsum.DefMeanEst
-from
-        TRESumPer tsum
-        join TRECode mcod on tsum.Measure = mcod.Code and mcod.CodeType=5
-where
-        tsum.EstPermID= 30064809048
-        and tsum.ExpireDate is null
-        and tsum.PerEndDate > GetDate()
-group by
-        tsum.EstPermID, tsum.Measure, mcod.Description, tsum.DefMeanEst
