@@ -145,32 +145,3 @@ order by
 ,	EffectiveDate desc
 
 
---------------------------------- Retrieve all DS2 current JP stocks
-drop table #ds2jp
-select
-	dmap.*
-,	difo.*
-into #ds2jp
-from
-	vw_Ds2Mapping dmap
-	join vw_Ds2SecInfo difo on dmap.VenCode=difo.InfoCode
-where
-	difo.IsPrimQt = 1
-	and difo.StatusCode='A'
-	and difo.CountryTradingInName='JAPAN'
-
-drop table #ibsdsjp
-select 
-	ibs2.SecCode
-,	ibs2.Name
-,	ibs2.EntPermID
-,	ibs2.EstPermID
-,	ds2j.InfoCode
-,	ds2j.DsQtName
-,	ds2j.PrimaryExchange
-,	convert(int, right(dsqt.DsLocalCode,4)) as 'Ticker'
-into #ibsdsjp
-from
-	#alljp_ibes2 ibs2
-	join #ds2jp ds2j on ibs2.SecCode=ds2j.SecCode
-	join Ds2CtryQtInfo dsqt on ds2j.InfoCode=dsqt.InfoCode
