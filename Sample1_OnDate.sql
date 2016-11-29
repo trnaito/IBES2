@@ -146,10 +146,10 @@ where
 	and ix.PerIndex = 1
 
 
--------------------------------------------------------------------------------------------------
--- 5. Show all consensus data items for a stock (7203.T Toyota Motors) without period restriction
+-----------------------------------------------------------------------------------------------------
+-- 5. Show all consensus data items for a stock (7203.T Toyota Motors) without a period restriction
 --    The data is annual and consolidated.
--------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
 
 select
 	cd.Description
