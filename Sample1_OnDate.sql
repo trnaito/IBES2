@@ -1,7 +1,7 @@
 
 /*============================================================================================================
 
- Version 1.0 2016/11/25 Ryoichi Naito: ryoichi.naito@thomsonreuters.com
+ Version 1.0 2016/11/29 Ryoichi Naito: ryoichi.naito@thomsonreuters.com
 
  Retrieve all available consensus data for a universe.
 
@@ -22,7 +22,8 @@
  <Take all Japanese stocks from GSecMstrX with EntPermID>
  ---------------------------------------------------------*/
 
-drop table #alljp_ibes2
+
+--drop table #alljp_ibes2
 select
 	gmst.SecCode
 ,	gmst.Isin
@@ -53,7 +54,7 @@ select * from #alljp_ibes2 order by Name -- (sample) 7203.T Toyota Motors.. EstP
 -----------------------
 -- 2. Available items
 -----------------------
-drop table #measlist_jp
+--drop table #measlist_jp
 select
 	distinct(Measure)
 into #measlist_jp
@@ -79,14 +80,13 @@ from
 order by
 	ml.Measure
 
-select * from TRECode
 
-
---------------------------------------------------------------------------------------------------
--- 3. Show all consensus data items for a stock (7203.T Toyota Motors) on a specific date of FY1.
+/*
+-----------------------------------------------------------------------------------------------------------
+-- 3. (Example) Show all consensus data items for a stock (7203.T Toyota Motors) on a specific date of FY1.
 --    The data is annual and consolidated.
 --    @myMonth is 'yyyyMM'
---------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
 
 declare @myMonth char(6);
 select @myMonth = '201610'; -- <<== Please specify the month in 'yyyyMM' format
@@ -110,7 +110,7 @@ where
 	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year
 	and ix.PerIndex = 1
 
-
+*/
 
 -------------------------------------------------------------------------------
 -- 4. Show all consensus data items for a universe on a specific month of FY1.
@@ -128,11 +128,13 @@ select @fMyMonth = @myMonth + '01';
 
 select
 	cd.Description
+,	st.Name
 ,	su.*
 from
 	TRESumPer su
 	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
 	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5
+	join #alljp_ibes2 st on su.EstPermID = st.EstPermID 
 where
 	su.EstPermID in (select EstPermID from #alljp_ibes2)
 	and su.EffectiveDate between convert(datetime, @fMyMonth, 112) and dateadd(month, 1, dateadd(day, -1, convert(datetime, @fMyMonth, 112))) 
@@ -140,8 +142,8 @@ where
 	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year
 	and ix.PerIndex = 1
 order by 
-	EstPermID asc
-,	Measure asc
-,	EffectiveDate desc
+	st.Name asc
+,	su.Measure asc
+,	su.EffectiveDate desc
 
 
