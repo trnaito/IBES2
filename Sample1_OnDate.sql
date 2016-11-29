@@ -81,39 +81,8 @@ order by
 	ml.Measure
 
 
-/*
------------------------------------------------------------------------------------------------------------
--- 3. (Example) Show all consensus data items for a stock (7203.T Toyota Motors) on a specific date of FY1.
---    The data is annual and consolidated.
---    @myMonth is 'yyyyMM'
------------------------------------------------------------------------------------------------------------
-
-declare @myMonth char(6);
-select @myMonth = '201610'; -- <<== Please specify the month in 'yyyyMM' format
-
------------------------------
-
-declare @fMyMonth char(8);
-select @fMyMonth = @myMonth + '01';
-
-select top 10000
-	cd.Description
-,	su.*
-from
-	TRESumPer su
-	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
-	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5
-where
-	su.EstPermID=30064817552
-	and su.EffectiveDate between convert(datetime, @fMyMonth, 112) and dateadd(month, 1, dateadd(day, -1, convert(datetime, @fMyMonth, 112))) 
-	and su.IsParent = 0 -- consolidated
-	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year
-	and ix.PerIndex = 1
-
-*/
-
 -------------------------------------------------------------------------------
--- 4. Show all consensus data items for a universe on a specific month of FY1.
+-- 3. Show all consensus data items for a universe on a specific month of FY1.
 --    The data is annual and consolidated.
 --    @myMonth is 'yyyyMM'
 -------------------------------------------------------------------------------
@@ -146,4 +115,53 @@ order by
 ,	su.Measure asc
 ,	su.EffectiveDate desc
 
+
+
+---------------------------------------------------------------------------------------------------
+-- 4. Show all consensus data items for a stock (7203.T Toyota Motors) on a specific date of FY1.
+--    The data is annual and consolidated.
+--    @myMonth is 'yyyyMM'
+---------------------------------------------------------------------------------------------------
+
+declare @myMonth char(6);
+select @myMonth = '201610'; -- <<== Please specify the month in 'yyyyMM' format
+
+-----------------------------
+
+declare @fMyMonth char(8);
+select @fMyMonth = @myMonth + '01';
+
+select
+	cd.Description
+,	su.*
+from
+	TRESumPer su
+	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
+	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5
+where
+	su.EstPermID=30064817552
+	and su.EffectiveDate between convert(datetime, @fMyMonth, 112) and dateadd(month, 1, dateadd(day, -1, convert(datetime, @fMyMonth, 112))) 
+	and su.IsParent = 0 -- consolidated
+	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year
+	and ix.PerIndex = 1
+
+
+-------------------------------------------------------------------------------------------------
+-- 5. Show all consensus data items for a stock (7203.T Toyota Motors) without period restriction
+--    The data is annual and consolidated.
+-------------------------------------------------------------------------------------------------
+
+select
+	cd.Description
+,	su.*
+from
+	TRESumPer su
+	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
+	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5
+where
+	su.EstPermID=30064817552 -- 7203.T Toyota Motors
+	and su.IsParent = 0 -- consolidated
+	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year
+order by
+	su.EffectiveDate
 
