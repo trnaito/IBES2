@@ -5,7 +5,7 @@
 
  Retrieve all available consensus data for a universe.
 
- Temp tables:
+ Temp tables: #alljp_ibes2, #measlist_jp
 
  Note: If you encountered an error 'Cannot drop the table...', please ignore and continue the rest of SQLs.
   
