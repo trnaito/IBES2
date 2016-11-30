@@ -3,7 +3,7 @@
 
  Version 1.0 2016/11/29 Ryoichi Naito: ryoichi.naito@thomsonreuters.com
 
- Retrieve all available consensus data for a universe.
+ Retrieve all available consensus data for a universe and for a stock.
 
  Temp tables: #alljp_ibes2, #measlist_jp
 
@@ -48,7 +48,7 @@ where
 order by Name asc
 
 
-select * from #alljp_ibes2 order by Name -- (sample) 7203.T Toyota Motors.. EstPermID=30064817552, EntPermID=55837434056, QuotePermID=55837434056
+--select * from #alljp_ibes2 order by Name -- (sample) 7203.T Toyota Motors.. EstPermID=30064817552, EntPermID=55837434056, QuotePermID=55837434056
 
 
 -----------------------
@@ -67,6 +67,8 @@ where
 	and PerEndDate > GetDate()
 	and format(PerEndDate, 'yyyyMM') > format(dateadd(year, -3, getdate()), 'yyyyMM') -- Strict recent 3 years to speed-up the query
 	and ExpireDate is null
+
+select * from #measlist_jp
 
 /*---------------------------------
  * The list of available data items
