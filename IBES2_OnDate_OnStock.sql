@@ -167,3 +167,31 @@ where
 order by
 	su.EffectiveDate
 
+
+--------------------------------------------------------------
+-- QA Direct Support 2016/12/02
+--
+-- Retrieve all historical forecast data by Analyst (Broker)
+-- -----------------------------------------------------------
+
+SELECT  top 1000
+    ComName, d.*
+FROM vw_ibes2detper d
+JOIN treinfo ti
+ON d.estpermid = ti.estpermid
+JOIN permorgref o
+ON ti.orgpermid = o.orgpermid
+WHERE isparent = 0
+      AND measure = 9  -- EPS
+      AND HPIShort_desc IN ('FY1', 'FY2', 'FY3')
+      AND brokerid = 875083441 -- Nomura coverage
+ORDER BY ComName
+       , Measure_desc
+       , IsParent
+       , Pertype
+       , HistoricalPeriodIndex
+       , d.effectivedate
+       , perenddate;
+
+
+
