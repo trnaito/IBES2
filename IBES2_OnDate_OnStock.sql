@@ -22,7 +22,6 @@
  <Take all Japanese stocks from GSecMstrX with EntPermID>
  ---------------------------------------------------------*/
 
-
 --drop table #alljp_ibes2
 select
 	gmst.SecCode
@@ -192,6 +191,30 @@ ORDER BY ComName
        , HistoricalPeriodIndex
        , d.effectivedate
        , perenddate;
+
+
+
+/*
+ Finding dupulicate Sedols
+ */
+
+ -- Check with 4 tables: GSecMstrX, GSecMapX, PermSecMapX, TREInfo
+
+select
+	gmst.*
+,	gmap.*
+,	pmap.*
+,	iifo.*
+from
+	GSecMstrX gmst
+	join GSecMapX gmap on gmst.SecCode = gmap.SecCode 
+		and gmap.VenType=2
+	join PermSecMapX pmap on gmst.SecCode=pmap.SecCode 
+		and pmap.RegCode=0           -- 0=Global, 1=US only
+		and pmap.EntType=55          -- QuotePermID (mapping with IBES2)
+	join TREInfo iifo on pmap.EntPermID = iifo.QuotePermID
+where
+	QuotePermID=55838855991
 
 
 
