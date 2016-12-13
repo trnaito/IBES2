@@ -78,11 +78,12 @@ from
 	TRESumPer su
 	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
 	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5 where
-	su.EstPermID=30064809841
+	su.EstPermID=30064869328 -- 3673 Broadleaf 12/17•ªŠ„ŽÀŽ{
 	and su.Measure=9 -- EPS
 	and su.IsParent = 0 -- consolidated
-	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year order by
-	su.PerEndDate, su.EffectiveDateselect
+	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year 
+order by
+	su.PerEndDate, su.EffectiveDate
 select convert(varchar, GETDATE()-@startTime, 114) as sqlTime
 
 
