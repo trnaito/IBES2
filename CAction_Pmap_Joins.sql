@@ -14,6 +14,18 @@
  権利落ち日      : 2016/9/28
  新株式売却可能日: 2016/9/28
 
+ 3673 Broadleaf 1:2 EstPermID=30064869328
+ 発表日
+ 権利付最終売買日: 2016/12/13
+ 権利落ち日　　　: 2016/12/14
+ 新株式売却可能日: 2016/12/14
+
+ 6161 Estic 1:2 EstPermID=30064810039
+ 発表日
+ 権利付最終売買日: 2016/12/15
+ 権利落ち日　　　: 2016/12/16
+ 新株式売却可能日: 2016/12/16
+
  */
 
 ------------------ All JP stocks for EstPermID
@@ -78,7 +90,7 @@ from
 	TRESumPer su
 	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
 	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5 where
-	su.EstPermID=30064869328 -- 3673 Broadleaf 12/17分割実施
+	su.EstPermID=30064810039 -- 6161 Estic 12/16分割実施
 	and su.Measure=9 -- EPS
 	and su.IsParent = 0 -- consolidated
 	and su.PerType = 4 -- 1=long-term, 2=month, 3=quater, 4=annual, 5=half-year 

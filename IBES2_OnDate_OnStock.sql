@@ -153,12 +153,14 @@ where
 -----------------------------------------------------------------------------------------------------
 
 select
-	cd.Description
+	cd.Description as "item_name"
+,   cd2.Description as "item_currency"
 ,	su.*
 from
 	TRESumPer su
 	join TREPerIndex ix on su.EstPermID=ix.EstPermID and su.PerType=ix.PerType and su.PerEndDate=ix.PerEndDate
 	join TRECode cd on su.Measure=cd.Code and cd.CodeType=5
+	join TRECode cd2 on su.DefCurrPermID=cd2.Code and cd2.CodeType=6
 where
 	su.EstPermID=30064817552 -- 7203.T Toyota Motors
 	and su.IsParent = 0 -- consolidated
